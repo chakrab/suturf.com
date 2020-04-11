@@ -1,0 +1,5 @@
+profile: service
+defaultPackage: zen.proverbs
+---
+testFramework: junit
+sourceLanguage: java
