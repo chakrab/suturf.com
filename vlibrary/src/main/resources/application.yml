@@ -1,0 +1,50 @@
+micronaut:
+  application:
+    name: vlibrary
+  server:
+    context-path: /api/v1
+---
+datasources:
+  default:
+    url: jdbc:h2:mem:default;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ''
+    driverClassName: org.h2.Driver
+---
+micronaut:
+  router:
+    static-resources:
+      swagger:
+        paths: classpath:META-INF/swagger
+        mapping: /swagger/**
+      swagger-ui:
+        paths: classpath:META-INF/swagger/views/swagger-ui
+        mapping: /swagger-ui/**
+---
+micronaut:
+  #ssl:
+    #enabled: true
+    #buildSelfSigned: true
+  security:
+    enabled: true
+    endpoints:
+      login:
+        enabled: true
+      oauth:
+        enabled: true
+    intercept-url-map:
+      - pattern: /**/swagger/**
+        httpMethod: GET
+        access:
+          - isAnonymous()
+      - pattern: /**/swagger-ui/**
+        httpMethod: GET
+        access:
+          - isAnonymous()
+    token:
+      jwt:
+        enabled: true
+        signatures:
+          secret:
+            generator:
+              secret: ${JWT_GENERATOR_SIGNATURE_SECRET:mMPrLVsqvcvTnZ9RI5WjTJZBOt5olNLMsgjhxYejs23OKA6112L6FbPNnOOELKLybeG7CqRPUqedta5Yd6ppvu2eycEWYMP2oIn4i1N7wDN2ViChPFaqjVMNW1z4yd14x7zkZOdLSrtnNLWBmuDiA2Gy6VI56MEcaMeCLiuXHq5LMJoB7goLRntGrNNc19Fe74AaEm31yBNOtEoIFcRqsZBUsLNNn3IPM1agJDNdwV7hcF3oMnONyGBxKCgmGjeK}

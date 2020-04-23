@@ -1,0 +1,5 @@
+profile: service
+defaultPackage: com.suturf.secure
+---
+testFramework: junit
+sourceLanguage: java
