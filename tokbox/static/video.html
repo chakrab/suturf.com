@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tokbox Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
+    <style>
+        body {
+            background-color: rgb(196, 216, 219);
+        }
+
+        #subscriber {
+            width: 360px;
+            height: 240px;
+            border: 3px solid white;
+            border-radius: 3px;
+        }
+
+        #publisher {
+            width: 360px;
+            height: 240px;
+            border: 3px solid white;
+            border-radius: 3px;
+        }
+    </style>
+
+    <script src="https://code.jquery.com/jquery-3.5.0.min.js"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+    <script defer src="https://static.opentok.com/v2/js/opentok.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#btnSubmit").click(function () {
+                if ($('#idRoom').val() === '') {
+                    alert('Room is required...');
+                } else {
+                    $.ajax({
+                        type: 'GET',
+                        dataType: "json",
+                        accept: "application/json",
+                        url: 'http://localhost:4567/room/' + $('#idRoom').val(),
+                        success: function (data) {
+                            if (data === null) {
+                                alert('Error getting valid response from server');
+                            } else {
+                                $('#idKey').val(data.keyId);
+                                $('#idSession').val(data.sessionId);
+                                $('#idToken').val(data.tokenId);
+                            }
+                        },
+                        error: function(xhr, stat, err) {
+                            console.error(stat + " -> " + err);
+                        }
+                    });
+                }
+                return false;
+            });
+
+            $("#btnStartVDO").click(function () {
+                initializeSession();
+                return false;
+            });
+
+            $("#btnStopVDO").click(function () {
+                alert("Stop VDO - coming soon");
+                return false;
+            });
+        });
+
+        /* Functions for TokBox */
+        function handleError(error) {
+            if (error) {
+                alert(error.message);
+            }
+        }
+
+        function initializeSession() {
+            
+            let idKey = $('#idKey').val();
+            let idSess = $('#idSession').val();
+            let idTokn = $('#idToken').val();
+
+            // Create Session
+            var session = OT.initSession(idKey, idSess);
+
+            // Subscribe
+            session.on('streamCreated', function(event) {
+                session.subscribe(event.stream, 'subscriber', {
+                    insertMode: 'append',
+                    width: '100%',
+                    height: '100%'
+                }, handleError);
+            });
+
+            // Publish
+            var publisher = OT.initPublisher('publisher', {
+                insertMode: 'append',
+                width: '100%',
+                height: '100%'
+            }, handleError);
+
+            // Connect to the session
+            session.connect(idTokn, function(error) {
+                if (error) {
+                    handleError(error);
+                } else {
+                    session.publish(publisher, handleError);
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title">
+                Video Test
+            </h1>
+            <form>
+                <div class="columns">
+                    <div class="column">
+                        <!-- Room Name -->
+                        <div class="field">
+                            <label class="label">Room Name</label>
+                            <div class="control has-icons-left">
+                                <input id='idRoom' class="input is-success" type="text"
+                                    placeholder="Enter Room Name to connect to">
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-chalkboard-teacher"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <!-- Session ID -->
+                        <div class="field">
+                            <label class="label">API Key</label>
+                            <div class="control has-icons-left">
+                                <input id='idKey' class="input is-warning" type="text" disabled>
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-key"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <!-- Session ID -->
+                        <div class="field">
+                            <label class="label">Session ID</label>
+                            <div class="control has-icons-left">
+                                <input id='idSession' class="input is-warning" type="text" disabled>
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-comment-dots"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <!-- Session ID -->
+                        <div class="field">
+                            <label class="label">Token ID</label>
+                            <div class="control has-icons-left">
+                                <input id='idToken' class="input is-warning disabled" type="text" disabled>
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-barcode"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="columns">
+                    <div class="column"></div>
+                    <div class="column">
+                        <!-- Buttons -->
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button id="btnSubmit" class="button is-primary is-light">
+                                    <span class="icon is-small">
+                                        <i class="fas fa-barcode"></i>
+                                    </span>
+                                    <span>Get Token</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <button id="btnStartVDO" class="button is-success is-light">
+                                    <span class="icon is-small">
+                                        <i class="fas fa-door-open"></i>
+                                    </span>
+                                    <span>Start Video</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <button id="btnStopVDO" class="button is-danger is-light">
+                                    <span class="icon is-small">
+                                        <i class="fas fa-door-closed"></i>
+                                    </span>
+                                    <span>Stop Video</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column"></div>
+                </div>
+            </form>
+            <hr />
+            <!-- Videos Start Here -->
+            <div class="columns">
+                <div class="column"></div>
+                <div class="column">
+                    <div id="subscriber"></div>
+                </div>
+                <div class="column">
+                    <div id="publisher"></div>
+                </div>
+                <div class="column"></div>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>
