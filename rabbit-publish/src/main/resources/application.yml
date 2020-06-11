@@ -1,0 +1,11 @@
+---
+micronaut:
+  application:
+    name: rabbit-publish
+---
+rabbitmq:
+  uri: amqp://mycoolweb.none:5672
+  username: marge
+  password: Pa$$word
+  virtual-host: simpson
+

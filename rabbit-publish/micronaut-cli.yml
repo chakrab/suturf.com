@@ -1,0 +1,5 @@
+profile: rabbitmq
+defaultPackage: com.suturf
+---
+testFramework: junit
+sourceLanguage: java
