@@ -1,0 +1,2 @@
+./scaleimg/cp007.jpg
+./scaleimg/cp008.jpg
