@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Iris Dataset: ML5 JS</title>
+        <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+        <script language="javascript">
+            var nn = ''; // Neural Network
+            
+            function genRandom(min, max) {
+                var genNum = Math.random() * (max - min) + min;
+                return genNum;
+            }
+
+            function loadFile() {
+                var elem = document.getElementById("fin");
+                var file = fin.files[0];
+                if (!file) {
+                    return;
+                }
+                
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var txt = e.target.result;
+                    showText(txt);
+                };
+                reader.readAsText(file);
+            }
+            
+            function showText(txt) {
+                var elem = document.getElementById("rtext");
+                elem.textContent = txt;
+            }
+            
+            function startTraining() {
+                var sarr = [];
+                // Load the data
+                var elem = document.getElementById("rtext");
+                var larr = elem.textContent.split(/\r\n|\n/);
+                larr.forEach(x => {
+                    flds = x.split(',');
+                    fld = {
+                        sepal_length: parseFloat(flds[0]),
+                        sepal_width: parseFloat(flds[1]),
+                        petal_length: parseFloat(flds[2]),
+                        petal_width: parseFloat(flds[3]),
+                        iris_class: flds[4]
+                    };
+                    sarr.push(fld);
+                });
+                
+                // Neural Network Options
+                const options = {
+                    inputs: ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
+                    outputs: ['iris_class'],
+                    task: "classification",
+                    debug: true
+                    ,layers: [
+                        {
+                            type: 'dense',
+                            units: 16,
+                            activation: 'tanh'
+                        },
+                        {
+                            type: 'dense',
+                            activation: 'softmax'
+                        }
+                    ]
+                };
+                
+                // Initialize
+                nn = ml5.neuralNetwork(options);
+                
+                sarr.forEach(item => {
+                    const inputs = {
+                        sepal_length: item.sepal_length, 
+                        sepal_width: item.sepal_width, 
+                        petal_length: item.petal_length,
+                        petal_width: item.petal_width
+                    };
+                    const output = {
+                        iris_class: item.iris_class
+                    };
+                    nn.addData(inputs, output);
+                });
+                
+                // Normalize
+                nn.normalizeData();
+                
+                // Train
+                const trainingOptions = {
+                    epochs: 128,
+                    batchSize: 10
+                }
+                nn.train(trainingOptions, finishedTraining);
+            }
+            
+            function finishedTraining(){
+                alert("Training Complete");
+            }
+            
+            function irisTest1() {
+                document.getElementById("sl").innerHTML = "4.6";
+                document.getElementById("sw").innerHTML = "3.6";
+                document.getElementById("pl").innerHTML = "1.0";
+                document.getElementById("pw").innerHTML = "0.2";
+                document.getElementById("ic1").innerHTML = '';
+                document.getElementById("ic2").innerHTML = '';
+                document.getElementById("ic3").innerHTML = '';
+                                
+                const input = {
+                    sepal_length: 4.6, 
+                    sepal_width: 3.6, 
+                    petal_length: 1.0,
+                    petal_width: 0.2
+                };
+                nn.classify(input, showClass);
+            }
+            
+            function irisTest2() {
+                document.getElementById("sl").innerHTML = "5.5";
+                document.getElementById("sw").innerHTML = "2.6";
+                document.getElementById("pl").innerHTML = "4.4";
+                document.getElementById("pw").innerHTML = "1.2";
+                document.getElementById("ic1").innerHTML = '';
+                document.getElementById("ic2").innerHTML = '';
+                document.getElementById("ic3").innerHTML = '';
+                
+                const input = {
+                    sepal_length: 5.5, 
+                    sepal_width: 2.6, 
+                    petal_length: 4.4,
+                    petal_width: 1.2
+                };
+                nn.classify(input, showClass);
+            }
+            
+            function irisTest3() {
+                document.getElementById("sl").innerHTML = "6.7";
+                document.getElementById("sw").innerHTML = "3.1";
+                document.getElementById("pl").innerHTML = "5.6";
+                document.getElementById("pw").innerHTML = "2.4";
+                document.getElementById("ic1").innerHTML = '';
+                document.getElementById("ic2").innerHTML = '';
+                document.getElementById("ic3").innerHTML = '';
+                
+                const input = {
+                    sepal_length: 6.7, 
+                    sepal_width: 3.1, 
+                    petal_length: 5.6,
+                    petal_width: 2.4
+                };
+                nn.classify(input, showClass);
+            }
+            
+            function randomTest() {
+                var sl = genRandom(4, 7).toFixed(2);
+                var sw = genRandom(2, 4).toFixed(2);
+                var pl = genRandom(1, 7).toFixed(2);
+                var pw = genRandom(0, 2).toFixed(2);
+                
+                document.getElementById("sl").innerHTML = sl;
+                document.getElementById("sw").innerHTML = sw;
+                document.getElementById("pl").innerHTML = pl;
+                document.getElementById("pw").innerHTML = pw;
+                document.getElementById("ic1").innerHTML = '';
+                document.getElementById("ic2").innerHTML = '';
+                document.getElementById("ic3").innerHTML = '';
+                
+                const input = {
+                    sepal_length: parseFloat(sl), 
+                    sepal_width: parseFloat(sw), 
+                    petal_length: parseFloat(pl),
+                    petal_width: parseFloat(pw)
+                };
+                nn.classify(input, showClass);
+            }
+            
+            function showClass(error, result) {
+                if (error) {
+                    alert(error);
+                } else {
+                    document.getElementById("ic1").innerHTML = JSON.stringify(result[0]);
+                    document.getElementById("ic2").innerHTML = JSON.stringify(result[1]);
+                    document.getElementById("ic3").innerHTML = JSON.stringify(result[2]);
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <h3>Iris Dataset: ML5 JS</h3>
+        <hr />
+        <table>
+            <tr>
+                <td><input id="fin" class="file-input" type="file"></input></td>
+                <td><button id="ldset" onclick="loadFile()">Load DataSet</button></td>
+            </tr>
+            <tr>
+                <td colspan="2"><textarea id="rtext" rows="25" cols="50"></textarea></td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align:center">
+                    <button id="trng" onclick="startTraining()">((( Start Training )))</button>
+                </td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td><button id="test1" onclick="irisTest1()">Setosa Test</button></td>
+                <td><button id="test2" onclick="irisTest2()">Versicolor Test</button></td>
+                <td><button id="test3" onclick="irisTest3()">Verginica Test</button></td>
+                <td><button id="test4" onclick="randomTest()">Random Test</button></td>
+            </tr>
+        </table>
+        <hr />
+        <table border="1">
+            <tr>
+                <th>Sepal Length</th>
+                <th>Sepal Width</th>
+                <th>Petal Length</th>
+                <th>Petal Width</th>
+            </tr>
+            <tr>
+                <td><label id="sl"></label></td>
+                <td><label id="sw"></label></td>
+                <td><label id="pl"></label></td>
+                <td><label id="pw"></label></td>
+            </tr>
+            <tr>
+                <td colspan="4"><label id="ic1"></label></td>
+            </tr>
+            <tr>
+                <td colspan="4"><label id="ic2"></label></td>
+            </tr>
+            <tr>
+                <td colspan="4"><label id="ic3"></label></td>
+            </tr>
+        </table>
+    </body>
+</html>
