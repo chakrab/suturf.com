@@ -57,11 +57,17 @@
                     ,layers: [
                         {
                             type: 'dense',
-                            units: 16,
-                            activation: 'tanh'
+                            units: 64,
+                            activation: 'sigmoid'
                         },
                         {
                             type: 'dense',
+                            units: 16,
+                            activation: 'sigmoid'
+                        },
+                        {
+                            type: 'dense',
+                            units: 3,
                             activation: 'softmax'
                         }
                     ]
