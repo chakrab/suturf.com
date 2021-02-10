@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Unclutter Viewer</title>
+    <style type="text/css">
+        .wraps {
+            display: grid;
+        }
+        .boxtop {
+            background-image: linear-gradient(to left, #2193b0, #6dd5ed);
+            color: #fff;
+            text-align: center;
+            grid-row-start: 1;
+            grid-row-end: 3;
+        }
+        .boxmid {
+            grid-row-start: 3;
+            grid-row-end: 6;
+        }
+        .boxbot {
+            text-align: center;
+            width: 100%;
+            grid-row-start: 6;
+            grid-row-end: 12;
+            padding-top: 30px;
+        }
+        .select {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: 3em;
+            line-height: 3;
+            overflow: hidden;
+            border-radius: .25em;
+            background: #2c3e50;
+        }
+        select {
+            flex: 1;
+            padding: 0 .5em;
+            color: black;
+            cursor: pointer;
+            background: rgba(197, 239, 247, 1);
+        }
+        button, input {
+            padding: 5px 15px;
+            background: rgba(197, 239, 247, 1);
+        }
+        textarea {
+            width: 95%;
+            max-width: 100%;
+            padding: 0 .5em;
+            color: black;
+            cursor: text;
+            overflow-y: scroll;
+            height: auto;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            let baseurl = "http://localhost:8080/";
+            $.ajax({
+                url: baseurl + "list",
+                crossDomain: true,
+                contentType: "application/json",
+                dataType: 'json',
+                success: function(result) {
+                    // Add to Select
+                    $.each(result, function (index, value) {
+                        $('#uncitems').append($('<option/>', {
+                            value: value['path'],
+                            text : value['name']
+                        }));
+                    });
+                },
+                error: function (xhr, status) {
+                    alert(xhr.responseText);
+                }
+            });
+
+            $('#uncitems').on('change', function() {
+                $('#ucsrch').val('');
+                $('#unctext').val('');
+                if (this.value !== "...Select...") {
+                    // Get this value
+                    $.ajax({
+                        url: baseurl + "files/reg?name=" + this.value,
+                        crossDomain: true,
+                        contentType: "text/plain",
+                        dataType: 'text',
+                        success: function(result) {
+                            // Add to Text Area
+                            $('#unctext').prop('readonly', false);
+                            $('#ucbtnupdt').prop('disabled', false);
+                            $('#unctext').val(result);
+                            $('#unctext').focus();
+                        },
+                        error: function (xhr, status) {
+                            alert(xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            $('#ucbtnsrch').on('click', function() {
+                $('#unctext').val('');
+                val = $('#ucsrch').val();
+                if (val !== '') {
+                    $.ajax({
+                        url: baseurl + "find?pattern=" + val,
+                        crossDomain: true,
+                        contentType: "text/plain",
+                        dataType: 'text',
+                        success: function(result) {
+                            // Add to Text Area
+                            $('#uncitems').val("...Select...").change();
+                            $('#ucsrch').val(val);
+                            $('#unctext').val(result);
+                            $('#unctext').prop('readonly', true);
+                            $('#ucbtnupdt').prop('disabled', true);
+                            $('#unctext').focus();
+                        },
+                        error: function (xhr, status) {
+                            alert(xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            $('#ucbtnnew').on('click', function() {
+                $('#uncitems').val("...Select...").change();
+                $('#unctext').prop('readonly', false);
+                $('#ucbtnupdt').prop('disabled', false);
+                $('#unctext').focus();
+            });
+
+            $('#ucbtnupdt').on('click', function() {
+                if (confirm("Are you sure you want to save?")) {
+                    $.ajax({
+                        url: baseurl + "files/save",
+                        type: 'POST',
+                        crossDomain: true,
+                        data: {
+                            "name":  ($('#uncitems').val() === '...Select...')?"NEW":$('#uncitems').val(),
+                            "text": $('#unctext').val()
+                        },
+                        success: function(result) {
+                            $('#uncitems').children('option:not(:first)').remove();
+                            $.each(result, function (index, value) {
+                                $('#uncitems').append($('<option/>', {
+                                    value: value['path'],
+                                    text : value['name']
+                                }));
+                            });
+                            $('#uncitems').val("...Select...").change();
+                        },
+                        error: function (xhr, status) {
+                            alert(xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            $('#ucbtndel').on('click', function() {
+                if ($('#uncitems').val() !== '...Select...') {
+                    if (confirm("Are you sure you want to delete?")) {
+                        selval = $('#uncitems').val();
+                        $.ajax({
+                            url: baseurl + "files/del?name=" + $('#uncitems').val(),
+                            type: 'DELETE',
+                            crossDomain: true,
+                            contentType: "text/plain",
+                            dataType: 'text',
+                            success: function(result) {
+                                // Remove this item
+                                $("#uncitems option[value='" + selval + "']").remove();
+                                $('#unctext').focus();
+                            },
+                            error: function (xhr, status) {
+                                alert(xhr.responseText);
+                            }
+                        });
+                    }
+                }
+            });
+
+            $(document).on('keypress',function(e) {
+                if (e.which === 13 && !$(':focus').is($('#unctext'))) {
+                    $('#ucbtnsrch').click()
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="wraps">
+        <div class="boxtop">
+            <h2>Unclutter File Viewer</h2>
+        </div>
+        <div class="boxmid">
+            <div class="select">
+                <button id="ucbtnnew">New</button>
+                <button id="ucbtnupdt">Save</button>
+                <button id="ucbtndel">Delete</button>
+                <select id="uncitems">
+                    <option>...Select...</option>
+                </select>
+                <input type="text" id="ucsrch">
+                <button id="ucbtnsrch">Find</button>
+            </div>
+        </div>
+        <div class="boxbot">
+            <textarea rows="40" id="unctext"></textarea>
+        </div>
+    </div>
+</body>
+</html>
