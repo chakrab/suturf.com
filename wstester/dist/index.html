@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+    This is a Web Socket tester that I created for testing one of my applications.
+    As such all features are related to  testing what I required. This has  three
+    sockets that work independently,
+
+    a. Socket 1: Connection for Left grid
+    b. Socket 2: Connection for Right grid
+    c. Socket 3: Connection for Listener on top (primarily to listen for braodcast messages)
+    
+    Apart from Connect and Disconnect that should be self evident, there are three different
+    buttons for sending messages. They each work a bit differently to suit my need:
+
+    a. Emit: Will only read the text area and generate the Event specified in text field
+    b. Send: Ignores Event and just uses Send to send text data
+    c. Merge: This will take whatever is in Text Area, add the file selected as 'data' in same
+        json and send the provided  Event to the  socket. Text  Area assumes  JSON is Merge is
+        clicked
+
+    There is minimal error checks as this was a quick hack for my own testing.
+
+    Original Author: Suvendra Chakrabarti
+    License: You are free to use it as you like
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WS Tester</title>
+    <style>
+        .header {
+            background-color: #f1f1f1;
+            padding: 10px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        .footer {
+            background-color: #f1f1f1;
+            text-align: center;
+            font-size: 0.8em;
+        }
+        .row {
+            display: -webkit-flex;
+            display: flex;
+            text-align: center;
+        }
+        .column {
+            -webkit-flex: 1;
+            -ms-flex: 1;
+            flex: 1;
+            padding: 10px;
+            border-style: ridge;
+        }
+        .center {
+            text-align: center;
+        }
+        .scrolldiv {
+            height: 400px;
+            overflow: scroll;
+            overflow-x: hidden;
+        }
+        .indic {
+            float: center;
+            height: 3px;
+            margin: 1px;
+            border: 1px solid #000;
+        }
+        .green {
+            background: #0f0;
+        }
+        .red {
+            background: #f00;
+        }
+        .inlog {
+            font-size: 0.8em;
+            color: navy;
+        }
+        .outlog {
+            font-size: 0.8em;
+            color: orchid;
+        }
+        .msglog {
+            font-size: 0.8em;
+            color: darkgreen;
+        }
+        .warnlog {
+            font-size: 0.8em;
+            color: darkred;
+        }
+        .errlog {
+            font-size: 0.8em;
+            color: red;
+        }
+        .broadcast {
+            font-size: 0.8em;
+            color: rgba(22, 116, 119, 0.863);
+        }
+        .binary {
+            font-size: 0.8em;
+            color: sienna;
+        }
+        .running {
+            background-color: rgb(0, 255, 191);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.1/socket.io.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function() {
+            var sock1 = undefined;
+            var sock2 = undefined;
+            var sock3 = undefined;
+
+            logMsg = function(txt, msgtyp) {
+                var clz;
+                var evt = event || window.event;
+                var source = undefined;
+                if (evt) {
+                    source = evt.target || evt.srcElement;
+                }
+
+                if (msgtyp === "info") {
+                    clz = "msglog";
+                } else if (msgtyp === 'inmsg') {
+                    clz = "inlog";
+                } else if (msgtyp === 'outmsg') {
+                    clz = "outlog";
+                } else if (msgtyp === 'warn') {
+                    clz = "warnlog";
+                } else if (msgtyp === 'err') {
+                    clz = "errlog";
+                } else if (msgtyp === 'cast') {
+                    clz = "broadcast";
+                }
+
+                if (source) {
+                    var atxt = '<span class="' + clz + '"> [' + source.id + '] ' + txt + '</span>';
+                    $("#logs").html(atxt + "<br/>" + $("#logs").html());
+                } else {
+                    var atxt = '<span class="' + clz + '">' + txt + '</span>';
+                    $("#logs").html(atxt + "<br/>" + $("#logs").html());
+                }
+            }
+
+            logMsgBinary = function(data) {
+                blob = new Blob([new Uint8Array(data, 0, data.byteLength)]);
+                const url = window.URL.createObjectURL(blob);
+                var atxt = '<span><a class="binary" href="' + url + '" target="_blank">Download Binary Data</a></span>';
+                $("#logs").html(atxt + "<br/>" + $("#logs").html());
+            };
+
+            connectWs = function(indi) {
+                var url = $("#wsurl").val();
+                if (url === "") {
+                    alert("URL missing...");
+                    return;
+                }
+
+                logMsg("Creating connection...", "info");
+                const sockt = io(url, {
+                    reconnectionDelayMax: 10000
+                });
+                sockt.on('connect', () => {
+                    if (sockt.connected) {
+                        logMsg("Connection Successful...", "warn");
+                        $(indi).removeClass("red");
+                        $(indi).addClass("green");
+                    } else {
+                        logMsg("Connection Failed...", "err");
+                    }
+                });
+                sockt.on('disconnect', () => {
+                    if (sockt.disconnected) {
+                        $(indi).removeClass("green");
+                        $(indi).addClass("red");
+                    } else {
+                        logMsg("Disconnect Failed...", "err");
+                    }
+                });
+                sockt.on('message', (data) => {
+                    if ((typeof data) === 'object') {
+                        logMsgBinary(data);
+                    } else {
+                        logMsg("Received: " + data, "inmsg");
+                    }
+                });
+                sockt.on('error', (err) => {
+                    alert(err);
+                });
+
+                return sockt;
+            }
+
+            listenWS = function() {
+                var url = $("#wsurl").val();
+                if (url === "") {
+                    alert("URL missing...");
+                    return;
+                }
+
+                logMsg("Creating connection...", "info");
+                const sockt = io(url, {
+                    reconnectionDelayMax: 10000
+                });
+                sockt.on('connect', () => {
+                    if (sockt.connected) {
+                        logMsg("Started Listening...", "warn");
+                        $('#lsevt').addClass('running');
+                    } else {
+                        logMsg("Connection Failed...", "err");
+                    }
+                });
+                sockt.on('disconnect', () => {
+                    if (sockt.disconnected) {
+                        logMsg("Stopped Listening...", "warn");
+                        $('#lsevt').removeClass('running');
+                    } else {
+                        logMsg("Disconnect Failed...", "err");
+                    }
+                });
+                sockt.on($('#lsevt').val(), (data) => {
+                    logMsg("Broadcast: " + data, "cast");
+                });
+                sockt.on('error', (err) => {
+                    alert(err);
+                });
+
+                return sockt;
+            }
+
+            $("#btnConnect1").click(function() {
+                if (!sock1) {
+                    sock1 = connectWs("#indi1");
+                } else {
+                    logMsg("Socket already open...", "err");
+                }
+            });
+            $("#btnDisconnect1").click(function() {
+                if (sock1) {
+                    logMsg("Disposing connection...", "warn");
+                    sock1.close(1000, "Quitting...");
+                    sock1 = undefined;
+                } else {
+                    logMsg("Socket not open...", "err");
+                }
+            });
+            $("#btnConnect2").click(function() {
+                if (!sock2) {
+                    sock2 = connectWs("#indi2");
+                } else {
+                    logMsg("Socket already open...", "err");
+                }
+            });
+            $("#btnDisconnect2").click(function() {
+                if (sock2) {
+                    logMsg("Disposing connection...", "warn");
+                    sock2.close(1000, "Quitting...");
+                    sock2 = undefined;
+                } else {
+                    logMsg("Socket not open...", "err");
+                }
+            });
+            $("#btnSend1").click(function() {
+                if (sock1) {
+                    var txt = $("#wssnd1").val();
+                    if (txt !== '') {
+                        sock1.send(txt);
+                        logMsg("Sending: " + txt, "outmsg");
+                    } else {
+                        var file = $("#file1")[0].files[0];
+                        var reader = new FileReader();
+                        var rawData = new ArrayBuffer();
+                        reader.onload = function(e) {
+                            rawData = e.target.result;
+                            sock1.send(rawData);
+                            logMsg("Binary data sent of size: " + rawData.byteLength, "outmsg");
+                        }
+                        reader.readAsArrayBuffer(file);
+                    }
+                } else {
+                    logMsg("Socket not open...", "err");
+                }
+            });
+            $("#btnEmit1").click(function() {
+                if (sock1) {
+                    var evt = $("#txtevt1").val();
+                    var txt = $("#wssnd1").val();
+                    if (txt !== '') {
+                        sock1.emit(evt, JSON.parse(txt));
+                        logMsg("Emitting: " + txt, "outmsg");
+                    } else {
+                        var file = $("#file1")[0].files[0];
+                        var reader = new FileReader();
+                        var rawData = new ArrayBuffer();
+                        reader.onload = function(e) {
+                            rawData = e.target.result;
+                            sock1.emit(evt, rawData);
+                            logMsg("Binary data sent of size: " + rawData.byteLength, "outmsg");
+                        }
+                        reader.readAsArrayBuffer(file);
+                    }
+                } else {
+                    logMsg("Socket not open...", "err");
+                }
+            });
+            $("#btnMerge1").click(function() {
+                if (sock1) {
+                    var evt = $("#txtevt1").val();
+                    var txt = JSON.parse($("#wssnd1").val());
+
+                    var file = $("#file1")[0].files[0];
+                    var reader = new FileReader();
+                    var rawData = new ArrayBuffer();
+                    reader.onload = function(e) {
+                        rawData = e.target.result;
+                        txt.file = rawData;
+                        sock1.emit(evt, txt);
+                        logMsg("Binary data sent of size: " + rawData.byteLength, "outmsg");
+                    }
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    logMsg("Socket not open...", "err");
+                }
+            });
+            $("#btnSend2").click(function() {
+                if (sock2) {
+                    var txt = $("#wssnd2").val();
+                    if (txt !== '') {
+                        sock2.send(txt);
+                        logMsg("Sending: " + txt, "outmsg");
+                    } else {
+                        var file = $("#file2")[0].files[0];
+                        var reader = new FileReader();
+                        var rawData = new ArrayBuffer();
+                        reader.onload = function(e) {
+                            rawData = e.target.result;
+                            sock2.send(rawData);
+                            logMsg("Binary data sent of size: " + rawData.byteLength, "outmsg");
+                        }
+                        reader.readAsArrayBuffer(file);
+                    }
+                } else {
+                    logMsg("Socket not open...", "err");
+                }
+            });
+            $("#btnEmit2").click(function() {
+                if (sock2) {
+                    var evt = $("#txtevt2").val();
+                    var txt = $("#wssnd2").val();
+                    if (txt !== '') {
+                        sock1.emit(evt, JSON.parse(txt));
+                        logMsg("Emitting: " + txt, "outmsg");
+                    } else {
+                        var file = $("#file2")[0].files[0];
+                        var reader = new FileReader();
+                        var rawData = new ArrayBuffer();
+                        reader.onload = function(e) {
+                            rawData = e.target.result;
+                            sock2.emit(evt, rawData);
+                            logMsg("Binary data sent of size: " + rawData.byteLength, "outmsg");
+                        }
+                        reader.readAsArrayBuffer(file);
+                    }
+                } else {
+                    logMsg("Socket not open...", "err");
+                }
+            });
+            $("#btnClear").click(function() {
+                var atxt = '<span class="msglog">Logs reset...</span>';
+                $("#logs").html(atxt);
+            });
+            $("#btnStartLsn").click(function() {
+                if (!sock3) {
+                    sock3 = listenWS();
+                } else {
+                    logMsg("Socket already open...", "err");
+                }
+            });
+            $("#btnStopLsn").click(function() {
+                if (sock3) {
+                    logMsg("Disposing connection...", "warn");
+                    sock3.close(1000, "Quitting...");
+                    sock3 = undefined;
+                } else {
+                    logMsg("Socket not open...", "err");
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="header">
+        <div class="row">
+            <div class="column">
+                <label for="wsurl">WS URL</label>
+                <input type="text" id="wsurl" value="ws://127.0.0.1:5000/" />
+            </div>
+            <div class="column">
+                <label for="lsevt">Listen Event</label>
+                <input type="text" id="lsevt" value="broadcast" readonly />
+                <button id="btnStartLsn">Start</button>
+                <button id="btnStopLsn">Stop</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="column">
+                <label for="wsuser">Basic Auth</label>
+                <input type="text" id="wsuser" placeholder="user" readonly />
+                <input type="text" id="wspass" placeholder="password" readonly />
+                <label for="wstmout">Reconnect Delay (ms)</label>
+                <input type="text" id="wstmout" value="10000" readonly />
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="column" style="background-color:rgb(232, 235, 186);">
+            <div>
+                <button id="btnConnect1">Connect</button>
+                <button id="btnDisconnect1">Disconnect</button>
+            </div>
+            <div class="indic red" id="indi1"></div>
+            <div>
+                <div class="row">
+                    <div class="column">
+                        <label for="wssnd1">Text</label>
+                    </div>
+                    <div class="column">
+                        <label for="file1">Binary</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="column">
+                        <textarea rows="5" cols="40" id="wssnd1"></textarea>
+                    </div>
+                    <div class="column">
+                        <input type="file" id="file1" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="column">
+                        <label for="txtevt1">Event</label>
+                        <input type="text" id="txtevt1" value="message" />
+                        <button id="btnEmit1" title="Send with specified event, text only if present">Emit</button>
+                        <button id="btnSend1" title="Send as default event (message), text only if present">Send</button>
+                        <button id="btnMerge1" title="Replicate multipart form, merge text and file. Text should be JSON, will append 'file'">Merge</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="column" style="background-color:rgb(233, 210, 160);">
+            <div>
+                <button id="btnConnect2">Connect</button>
+                <button id="btnDisconnect2">Disconnect</button>
+            </div>
+            <div class="indic red" id="indi2"></div>
+            <div>
+                <div class="row">
+                    <div class="column">
+                        <label for="wssnd2">Text</label>
+                    </div>
+                    <div class="column">
+                        <label for="file2">Binary</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="column">
+                        <textarea rows="5" cols="40" id="wssnd2"></textarea>
+                    </div>
+                    <div class="column">
+                        <input type="file" id="file2" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="column">
+                        <label for="txtevt2">Event</label>
+                        <input type="text" id="txtevt2" value="message" />
+                        <button id="btnEmit2">Emit</button>
+                        <button id="btnSend2">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="center">
+        <button id="btnClear">Clear Logs</button>
+    </div>
+    <div id="logs" class="footer scrolldiv" contenteditable="false">
+        <span class="msglog">Enter WS URL and press connect...</span>
+    </div>
+</body>
+</html>
