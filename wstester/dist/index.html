@@ -14,7 +14,7 @@
 
     a. Emit: Will only read the text area and generate the Event specified in text field
     b. Send: Ignores Event and just uses Send to send text data
-    c. Merge: This will take whatever is in Text Area, add the file selected as 'data' in same
+    c. Merge: This will take whatever is in Text Area, add the file selected as 'file' in same
         json and send the provided  Event to the  socket. Text  Area assumes  JSON is Merge is
         clicked
 
@@ -317,6 +317,7 @@
                         txt.file = rawData;
                         sock1.emit(evt, txt);
                         logMsg("Binary data sent of size: " + rawData.byteLength, "outmsg");
+                        console.log(txt)
                     }
                     reader.readAsArrayBuffer(file);
                 } else {
