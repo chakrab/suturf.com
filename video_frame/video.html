@@ -1,0 +1,117 @@
+<!--
+HTML/ JavaScript file to send Video data only to a back end Python server.
+Data is sent every 5 seconds.
+Sample only, no proper error handling/ repporting done.
+-->
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Record Video</title>
+		<meta charset="utf-8">
+		<script src="./rsc/jquery-3.6.0.min.js" type="text/javascript"></script>
+		<script type="text/javascript">
+			$(document).ready(function () {
+				var media;
+				var recorder;
+				var timer;
+				var chunkCnt = 1;
+				
+				function logMessage(txt) {
+					$('#status').text(txt);
+				}
+
+				function rcdSuccess(stream) {
+					const audioTracks = stream.getAudioTracks();
+					media = stream;
+					
+					const recordingOpts = {};
+					recorder = new MediaRecorder(stream, recordingOpts);
+					
+					recorder.ondataavailable = function(e) {
+						var formData = new FormData();
+						formData.append('file', e.data);
+						$.ajax({
+							url : 'http://localhost:8000/v/data',
+							type: 'POST',
+							data: formData,
+							cache: false,
+							contentType: false,
+							processData: false,
+							success: function(returnData) {
+								logMessage('Server accepted, chunk count sent: ' + chunkCnt++);
+							},
+							error: function(xhr, status, error) {
+								logMessage('Server rejected');
+							}
+						});
+					}
+
+					recorder.start(5000);
+					timer = setInterval(recorder.requestdata, 5000);
+				}
+					
+				function rcdFail(error) {
+					const err = 'Error: ' + error.message + ' ' + error.name;
+					logMessage(err);
+				}
+	
+				$('#startrec').click(function() {
+					logMessage('Start Recording...');
+					let options = { audio: false, video: true };
+					navigator.mediaDevices.getUserMedia(options)
+						.then(rcdSuccess).catch(rcdFail);
+					$.ajax({
+						url : 'http://localhost:8000/v/strt',
+						type: 'POST',
+						success: function(returnData) {
+							logMessage('Server accepted');
+						},
+						error: function(xhr, status, error) {
+							logMessage('Server rejected');
+						}
+					});
+				});
+				
+				$('#endrec').click(function() {
+					logMessage('Stop Recording...');
+					recorder.stop();
+					clearInterval(timer);
+					media.getTracks().forEach(function(track) {
+						track.stop();
+						$.ajax({
+							url : 'http://localhost:8000/v/done',
+							type: 'POST',
+							success: function(returnData) {
+								logMessage('Server accepted');
+							},
+							error: function(xhr, status, error) {
+								logMessage('Server rejected');
+							}
+						});
+					});
+				});
+			});
+		</script>
+	</head>
+	<body>
+		<table>
+			<tr>
+				<td>
+					<button type = "submit" id = "startrec">
+   						<p>Start Recording</p>
+   						<img src="./rsc/btn_start.jpg" width="128px" />
+					</button>
+				</td>
+				<td>
+					<button id = "endrec">
+   						<p>Stop Recording</p>
+   						<img src="./rsc/btn_stop.jpg" width="128px" />
+					</button>
+				</td>
+			</tr>
+			<tr>
+				<td><label id="status">Press Start...</label></td>
+			</tr>
+		</table>
+	</body>
+</html>
