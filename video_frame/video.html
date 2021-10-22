@@ -31,7 +31,7 @@ Sample only, no proper error handling/ repporting done.
 						var formData = new FormData();
 						formData.append('file', e.data);
 						$.ajax({
-							url : 'http://localhost:8000/v/data',
+							url : 'http://localhost:4096/v/data',
 							type: 'POST',
 							data: formData,
 							cache: false,
@@ -61,7 +61,7 @@ Sample only, no proper error handling/ repporting done.
 					navigator.mediaDevices.getUserMedia(options)
 						.then(rcdSuccess).catch(rcdFail);
 					$.ajax({
-						url : 'http://localhost:8000/v/strt',
+						url : 'http://localhost:4096/v/strt',
 						type: 'POST',
 						success: function(returnData) {
 							logMessage('Server accepted');
@@ -79,7 +79,7 @@ Sample only, no proper error handling/ repporting done.
 					media.getTracks().forEach(function(track) {
 						track.stop();
 						$.ajax({
-							url : 'http://localhost:8000/v/done',
+							url : 'http://localhost:4096/v/done',
 							type: 'POST',
 							success: function(returnData) {
 								logMessage('Server accepted');

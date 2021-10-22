@@ -1,0 +1,167 @@
+<!--
+HTML/ JavaScript file to send Video data only to a back end Python server.
+Data is sent every 5 seconds.
+Sample only, no proper error handling/ repporting done.
+-->
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Snapshot</title>
+		<meta charset="utf-8">
+		<style>
+			.container {
+  				width: 500px;
+  				margin: 10px auto;
+			}
+			
+			.btn {
+  				display: inline;
+  				width: 100px;
+  				padding: 10px;
+  				margin: auto;
+  				margin-bottom: 5px;
+			}
+			
+			p {
+				text-align: center;
+			}
+			
+			#photos {
+  				display: grid;
+  				grid-template-columns: repeat(3, 1fr);
+  				grid-gap: 10px;
+			}
+
+			#photos img {
+  				width: 100%;
+  				border: 3px #fff solid;
+			}
+
+			#acanvas {
+				display: none;
+			}
+		</style>
+		<script src="./rsc/jquery-3.6.0.min.js" type="text/javascript"></script>
+		<script type="text/javascript">
+			var streaming = false;
+			var width = 450;
+			var height = 0;
+			
+			$(document).ready(function () {
+				const video = $('#avideo')[0];
+				const canvas = $('#acanvas')[0];
+				const stbutn = $('#astart')[0];
+				const snbutn = $('#asnap')[0];
+				const aubutn = $('#autop')[0];
+				const clbutn = $('#clean')[0];
+				
+
+				rcdSuccess = function(stream) {
+					video.srcObject = stream;
+				}
+					
+				rcdFail = function(error) {
+					const err = 'Error: ' + error.message + ' ' + error.name;
+					console.log(err);
+				}
+				
+				dataURLtoBlob = function(dataurl) {
+					// @Credit: https://stackoverflow.com/a/30407959/1154380
+					var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+        				bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+    				while(n--) {
+        				u8arr[n] = bstr.charCodeAt(n);
+    				}
+    				return new Blob([u8arr], {type:mime});
+				}
+				
+				takeSnap = function() {
+					const ctx = canvas.getContext('2d');
+					if (width && height) {
+						canvas.width = width;
+						canvas.height = height;
+						ctx.drawImage(video, 0, 0, width, height);
+						
+						const imgUrl = canvas.toDataURL('image/png');
+						const img = document.createElement('img');
+						img.setAttribute('src', imgUrl);
+						$('#photos').append(img);
+						
+						// Send to Server Here
+						var formData = new FormData();
+						formData.append('file', dataURLtoBlob(imgUrl));
+						$.ajax({
+							url : 'http://localhost:4096/image',
+							type: 'POST',
+							data: formData,
+							cache: false,
+							contentType: false,
+							processData: false,
+							success: function(returnData) {
+								console.log('Server accepted');
+							},
+							error: function(xhr, status, error) {
+								console.log('Server rejected');
+							}
+						});
+					}
+				}
+				
+				autoSnap = function() {
+					takeSnap();
+					////// CHANGE THIS NUMBER FOR SLOWER/ FASTER SAVES //////
+					setInterval(takeSnap, 5000);
+				}
+				
+				video.addEventListener('canplay', function(e) {
+					if (!streaming) {
+						height = video.videoHeight / (video.videoWidth/ width);
+						video.setAttribute('width', width);
+    					video.setAttribute('height', height);
+    					canvas.setAttribute('width', width);
+    					canvas.setAttribute('height', height);
+    					streaming = true;
+    					
+					}
+				}, false);
+				
+				stbutn.addEventListener('click', function(e) {
+					let options = { audio: false, video: true };
+					navigator.mediaDevices.getUserMedia(options)
+						.then(rcdSuccess).catch(rcdFail);
+				}, false);
+				
+				snbutn.addEventListener('click', function(e) {
+					takeSnap();
+				}, false);
+				
+				aubutn.addEventListener('click', function(e) {
+					autoSnap();
+				}, false);
+				
+				clbutn.addEventListener('click', function(e) {
+					$('#photos').html('');
+				}, false);
+			});
+		</script>
+	</head>
+	<body>
+		<div class='container'>
+			<p>
+				<video id="avideo" autoplay>Start Stream</video>
+			</p>
+			<div class="btn">
+				<p>
+					<button id="astart" class="btn">Start</button>
+					<button id="asnap" class="btn">Snap</button>
+					<button id="autop" class="btn">Auto</button>
+					<button id="clean" class="btn">Clean</button>
+				</p>
+			</div>
+			<canvas id="acanvas"></canvas>
+		</div>
+		<div class='container'>
+			<div id="photos"></div>
+		</div>
+	</body>
+</html>

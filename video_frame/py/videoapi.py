@@ -21,8 +21,8 @@ Libraries used:
 """
 
 
-PORT = 8000
-FNAME = '/Users/suvendra/temp/poc/'
+PORT = 4096
+FNAME = '/Users/me/poc/'
 APP = Flask(__name__)
 CORS(APP)
 
@@ -39,6 +39,10 @@ class VideoApi:
     self.counter = 0
     self.save_file = FNAME + 'F_' + sfx + '.mp4'
     logging.info('Filename generated: %s' % self.save_file)
+    
+  def create_imgfile(self):
+    sfx = datetime.datetime.now().strftime("%H%M%S")
+    return FNAME + 'I_' + sfx + '.png'
 
   def create_return(self, code, msg):
     resp_body = {
@@ -47,7 +51,7 @@ class VideoApi:
     }
     return resp_body
 
-  def process_image(self):
+  def process_video(self):
     cap = cv2.VideoCapture(self.save_file)
     if cap.isOpened() == True:
       frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -65,7 +69,7 @@ class VideoApi:
     filename = secure_filename(flr.filename)
     with open(self.save_file, 'ab') as fw:
       fw.write(chunk_data)
-    self.process_image()
+    self.process_video()
     
   def sigint_handler(self, sig, frame):
     logging.info('Bye, until next time...')
@@ -110,6 +114,24 @@ class VideoApi:
     return jsonify(
       self.create_return(0, 'Stopped...')
     ), 200
+    
+  def save_image(self):
+    if request.method == 'POST':
+      if 'file' not in request.files:
+        logging.error('File not found...')
+        return jsonify (
+          self.create_return(1, 'File not found')
+        ), 500
+        
+      files = request.files['file']
+      file_data = files.read()
+      file_name = self.create_imgfile()
+      with open(file_name, 'wb') as fw:
+        fw.write(file_data)
+      
+      return jsonify(
+        self.create_return(0, 'File: ' + file_name + ' saved..')
+      ), 200
 
 
 #########
@@ -124,6 +146,7 @@ if __name__ == "__main__":
   APP.add_url_rule('/v/strt', view_func=va.start_video, methods=["POST"])
   APP.add_url_rule('/v/data', view_func=va.save_video, methods=["POST"])
   APP.add_url_rule('/v/done', view_func=va.end_video, methods=["POST"])
+  APP.add_url_rule('/v/image', view_func=va.save_image, methods=["POST"])
   
   logging.info('Starting on port: %d' % PORT)
   APP.run(host="0.0.0.0", port=PORT, debug=True)
