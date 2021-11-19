@@ -61,7 +61,7 @@ class Vincenty:
                     cos_sigma * (-1 + 2 * cos2_sigma_m ** 2) - (1 / 6) * val_b * cos2_sigma_m * (
                         -3 + 4 * sin_sigma ** 2) * (-3 + 4 * cos2_sigma_m ** 2)))
         dist = POLR_RADIUS * val_a * (val_sigma - delta_sig)
-        print('Distance by Vincenty: %.2f m or %.2f miles' % (dist, dist * 0.0006213712))
+        print('Distance by Vincenty: %.4f m or %.4f miles' % (dist, dist * 0.0006213712))
         return dist
 
 

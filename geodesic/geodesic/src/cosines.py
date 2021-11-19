@@ -19,7 +19,7 @@ class LawOfCosines:
         ang_B = cos(self.point_A_lat) * cos(self.point_B_lat) * cos(self.point_B_lon - self.point_A_lon)
         ang_C = acos(ang_A + ang_B)
         dist = MEAN_RADIUS * ang_C
-        print('Distance by Law of Cosines: %.2f m or %.2f miles' % (dist, dist * 0.0006213712))
+        print('Distance by Law of Cosines: %.4f m or %.4f miles' % (dist, dist * 0.0006213712))
         return dist
 
 
