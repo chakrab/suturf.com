@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=800, initial-scale=1.0">
+    <title>Video Player</title>
+    <meta charset="utf-8">
+    <style>
+        * {
+            font-family: courier;
+            font-size: 12px;
+        }
+
+        .container {
+            width: 500px;
+            margin: 10px auto;
+        }
+
+        .btn {
+            display: inline;
+            width: 100px;
+            padding: 10px;
+            margin: auto;
+            margin-bottom: 5px;
+        }
+
+        #btn_load {
+            background: url('rsc/btn_start.jpg') no-repeat;
+            background-size: 28px;
+        }
+
+        #btn_seek {
+            background: url('rsc/btn_seek.png') no-repeat;
+            background-size: 28px;
+        }
+
+        #btn_stop {
+            background: url('rsc/btn_stop.jpg') no-repeat;
+            background-size: 28px;
+        }
+        
+        p {
+            text-align: center;
+        }
+    </style>
+    <script src="./rsc/jquery-3.6.0.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            const video = $('#avideo')[0];
+            const txtfile = $('#filename');
+            const txttime = $('#timeline');
+            const btnload = $('#btn_load')[0];
+            const btnseek = $('#btn_seek')[0];
+            const btnstop = $('#btn_stop')[0];
+
+            video.addEventListener('canplay', function(e) {
+                console.log('Video duration: ' + video.duration);
+            });
+
+            btnload.addEventListener('click', function(e) {
+                var file = txtfile.prop('files');
+                var filetype = file[0].type;
+                var isplayable = video.canPlayType(filetype);
+                console.log(isplayable==''?'Nope':'Yep');
+                var fileURL = URL.createObjectURL(file[0]);
+                video.src = fileURL;
+            });
+
+            btnseek.addEventListener('click', function(e) {
+                var seektime = txttime.val();
+                video.currentTime = seektime;
+            });
+
+            btnstop.addEventListener('click', function(e) {
+                video.pause();
+                video.currentTime = 0;
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class='container'>
+        <p>
+            <video id="avideo" height="400" controls autoplay>Start Stream</video>
+        </p>
+        <div>
+            <p>
+                <input id="filename" type="file" accept="video/*" size="15"></input>
+                <label for="timeline">Timeline</label>
+                <input id="timeline" type="text" placeholder="Time" size="5"></input>
+            </p>
+        </div>
+        <div class="btn">
+            <p>
+                <button id="btn_load" class="btn">Start</button>
+                <button id="btn_seek" class="btn">Seek</button>
+                <button id="btn_stop" class="btn">Stop</button>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

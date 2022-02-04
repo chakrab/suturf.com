@@ -1,6 +1,6 @@
 <!--
 HTML/ JavaScript file to send Video data only to a back end Python server.
-Data is sent every 5 seconds.
+Data is sent every 1 seconds.
 Sample only, no proper error handling/ repporting done.
 -->
 <!DOCTYPE html>
@@ -28,7 +28,7 @@ Sample only, no proper error handling/ repporting done.
 			
 			#photos {
   				display: grid;
-  				grid-template-columns: repeat(3, 1fr);
+  				grid-template-columns: repeat(4, 1fr);
   				grid-gap: 10px;
 			}
 
@@ -54,6 +54,8 @@ Sample only, no proper error handling/ repporting done.
 				const snbutn = $('#asnap')[0];
 				const aubutn = $('#autop')[0];
 				const clbutn = $('#clean')[0];
+				const svbutn = $('#vstop')[0];
+				const acbutn = $('#acton')[0];
 				
 
 				rcdSuccess = function(stream) {
@@ -64,9 +66,38 @@ Sample only, no proper error handling/ repporting done.
 					const err = 'Error: ' + error.message + ' ' + error.name;
 					console.log(err);
 				}
+
+				sendGetData = function(ep) {
+					$.ajax({
+						url : ep,
+						type: 'GET',
+						success: function(returnData) {
+							return 0;
+						},
+						error: function(xhr, status, error) {
+							return 1;
+						}
+					});
+				}
+
+				sendPostData = function(ep, fdata) {
+					$.ajax({
+						url : ep,
+						type: 'POST',
+						data: fdata,
+						cache: false,
+						contentType: false,
+						processData: false,
+						success: function(returnData) {
+							return 0;
+						},
+						error: function(xhr, status, error) {
+							return 1;
+						}
+					});
+				}
 				
 				dataURLtoBlob = function(dataurl) {
-					// @Credit: https://stackoverflow.com/a/30407959/1154380
 					var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
         				bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
     				while(n--) {
@@ -90,27 +121,25 @@ Sample only, no proper error handling/ repporting done.
 						// Send to Server Here
 						var formData = new FormData();
 						formData.append('file', dataURLtoBlob(imgUrl));
-						$.ajax({
-							url : 'http://localhost:4096/image',
-							type: 'POST',
-							data: formData,
-							cache: false,
-							contentType: false,
-							processData: false,
-							success: function(returnData) {
-								console.log('Server accepted');
-							},
-							error: function(xhr, status, error) {
-								console.log('Server rejected');
-							}
-						});
+						var r = sendPostData('http://localhost:4096/image', formData);
+						console.log('IMAGE Response: ' + r);
 					}
 				}
 				
 				autoSnap = function() {
 					takeSnap();
 					////// CHANGE THIS NUMBER FOR SLOWER/ FASTER SAVES //////
-					setInterval(takeSnap, 5000);
+					setInterval(takeSnap, 1000);
+				}
+
+				fixedSnap = function(cnt) {
+					takeSnap();
+					cnt -= 1;
+					if (cnt > 0) {
+						setTimeout(() => {
+							fixedSnap(cnt);
+						}, 1000);
+					}
 				}
 				
 				video.addEventListener('canplay', function(e) {
@@ -142,6 +171,20 @@ Sample only, no proper error handling/ repporting done.
 				clbutn.addEventListener('click', function(e) {
 					$('#photos').html('');
 				}, false);
+
+				svbutn.addEventListener('click', function(e) {
+					if (streaming) {
+						video.srcObject.getTracks().forEach(function(track) {
+							track.stop();
+						});
+					}
+				}, false);
+
+				acton.addEventListener('click', function(e) {
+					var r = sendGetData('http://localhost:4096/cmd?n_frames=10');
+					console.log('CMD Response: ' + r);
+					fixedSnap(10);
+				}, false);
 			});
 		</script>
 	</head>
@@ -154,6 +197,10 @@ Sample only, no proper error handling/ repporting done.
 				<p>
 					<button id="astart" class="btn">Start</button>
 					<button id="asnap" class="btn">Snap</button>
+					<button id="vstop" class="btn">Stop</button>
+				</p>
+				<p>
+					<button id="acton" class="btn">10 snaps</button>
 					<button id="autop" class="btn">Auto</button>
 					<button id="clean" class="btn">Clean</button>
 				</p>
