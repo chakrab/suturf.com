@@ -52,6 +52,7 @@ coverage.xml
 .pytest_cache/
 
 # Translations
+B
 *.mo
 *.pot
 
@@ -84,6 +85,7 @@ ipython_config.py
 # pyenv
 .python-version
 
+# A
 # pipenv
 #   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
 #   However, in case of collaboration, if having platform-specific dependencies or dependencies
@@ -132,4 +134,8 @@ dmypy.json
 .DS_Store
 ._.DS_Store
 .idea
+.settings
+.classpath
+.project
+
 outputs
