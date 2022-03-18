@@ -1,0 +1,208 @@
+<html>
+    <head>
+        <title>Background Swap Video</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="../shared/ext/css/bulma.min.css" />
+
+        <script src="../shared/ext/js/jquery-3.6.0.min.js" type="text/javascript"></script>
+        <script src="../shared/ext/js/tf.min.js" type="text/javascript"></script>
+        <script src="../shared/ext/js/body-pix.js" type="text/javascript"></script>
+        <script type="text/javascript">
+            var streaming = false;
+            var bodyNet = null;
+            var curr_image = null;
+            var width = 450;
+			var height = 0;
+
+            $(document).ready(function () {
+                const video = $('#avideo')[0];
+                const cnvas = $('#acanvas')[0];
+                const strtb = $('#startb')[0];
+                const endb  = $('#endb')[0];
+                const check = $('#backcheck');
+
+                const img_none = $('#none_img')[0];
+                const img_forest = $('#forest_img')[0];
+                const img_mountain = $('#mountain_img')[0];
+                const img_office = $('#office_img')[0];
+                const img_sunset = $('#sunset_img')[0];
+                const img_village = $('#village_img')[0];
+
+                pixSuccess = function(value) {
+                    console.log('Body pix loaded...');
+                    bodyNet = value;
+				}
+					
+				pixFail = function(error) {
+					const err = 'Error: ' + error.message + ' ' + error.name;
+					console.log(err);
+				}
+
+                // Let's load bodypix
+                bodyPix.load({
+                    architecture: 'MobileNetV1',
+                    outputStride: 16,
+                    multiplier: 0.75,
+                    quantBytes: 2
+                }).then(pixSuccess).catch(pixFail);
+
+                // Check the None radio
+                $('input:radio[type="radio"][name="bground"]').filter('[value="none"]').attr('checked', true);
+
+                check.change(function() {
+                    var valc = $('input[type="radio"][name="bground"]:checked').val();
+                    console.log('Checked value: ' + valc);
+                    var frame = null;
+                    var ctx_tmp = cnvas.getContext('2d');
+                    if (valc == 'none') {
+                        curr_image = null;
+                        ctx_tmp.drawImage(img_none, 0, 0, width, height);
+                    } else {
+                        var tmp_image;
+                        if (valc == 'forest') {
+                            img_forest.height = height;
+                            img_forest.width = width;
+                            tmp_image = img_forest;
+                        } else if (valc == 'mountain') {
+                            img_mountain.height = height;
+                            img_mountain.width = width;
+                            tmp_image = img_mountain;
+                        } else if (valc == 'office') {
+                            img_office.height = height;
+                            img_office.width = width;
+                            tmp_image = img_office;
+                        } else if (valc == 'village') {
+                            img_village.height = height;
+                            img_village.width = width;
+                            tmp_image = img_village;
+                        } else if (valc == 'sunset') {
+                            img_sunset.height = height;
+                            img_sunset.width = width;
+                            tmp_image = img_sunset;
+                        }
+
+                        ctx_tmp.drawImage(tmp_image, 0, 0, width, height);
+                        curr_image = ctx_tmp.getImageData(0, 0, width, height);
+                    }
+                });
+
+                videoFrames = async function(tmer, metadata) {
+                    if (bodyNet != null) {
+                        var segdata = await bodyNet.segmentPerson(video);
+                        var ctx_out = cnvas.getContext('2d');
+                        ctx_out.drawImage(video, 0, 0, width, height);
+                        var out_image = ctx_out.getImageData(0, 0, width, height);
+
+                        if (curr_image != null) {
+                            for (x=0; x<width; x++) {
+                                for (y=0; y<height; y++) {
+                                    var n = x + (y * width);
+                                    if (segdata.data[n] == 0) {
+                                        // Replace RGB
+                                        out_image.data[n * 4] = curr_image.data[n * 4];         // R
+                                        out_image.data[n * 4 + 1] = curr_image.data[n * 4 + 1]; // G
+                                        out_image.data[n * 4 + 2] = curr_image.data[n * 4 + 2]; // B
+                                        out_image.data[n * 4 + 3] = curr_image.data[n * 4 + 3]; // A
+                                    }
+                                }
+                            }
+                        }
+
+                        ctx_out.putImageData(out_image, 0, 0);
+                        video.requestVideoFrameCallback(videoFrames);
+                    }
+                }
+
+                rcdSuccess = function(stream) {
+					video.srcObject = stream;
+				}
+					
+				rcdFail = function(error) {
+					const err = 'Error: ' + error.message + ' ' + error.name;
+					console.log(err);
+				}
+
+                video.addEventListener('canplay', function(e) {
+					if (!streaming) {
+						height = video.videoHeight / (video.videoWidth/ width);
+						video.setAttribute('width', width);
+    					video.setAttribute('height', height);
+                        cnvas.setAttribute('width', width);
+                        cnvas.setAttribute('height', height);
+                        video.requestVideoFrameCallback(videoFrames);
+    					streaming = true;
+					}
+				}, false);
+
+                strtb.addEventListener('click', function(e) {
+                    let options = { audio: false, video: { width: { min: width, ideal: width, max: width } } };
+                    navigator.mediaDevices.getUserMedia(options)
+						.then(rcdSuccess).catch(rcdFail);
+                }, false);
+
+                endb.addEventListener('click', function(e) {
+                    curr_image = null;
+                    // Check the None radio
+                    $('input:radio[type="radio"][name="bground"]').filter('[value="none"]').attr('checked', true);
+                    
+                    if (streaming) {
+						video.srcObject.getTracks().forEach(function(track) {
+							track.stop();
+						});
+					}
+                }, false);
+            });
+        </script>
+    </head>
+    <body>
+        <section class="section">
+            <div class="container">
+                <a class="button is-primary" id="startb">
+                    Start Video
+                </a>
+                <a class="button is-primary" id="endb">
+                    Stop Video
+                </a>
+                <br />
+                <br />
+                <div class = "control" id="backcheck">
+                    <label class="label">Select Background:</label>
+                    <label class="radio">
+                        <input type="radio" name="bground" value="none"> None 
+                     </label>
+                    <label class="radio">
+                        <input type="radio" name="bground" value="forest"> Forest 
+                     </label>
+                     <label class="radio">
+                        <input type="radio" name="bground" value="mountain"> Mountain 
+                     </label>
+                     <label class="radio">
+                        <input type="radio" name="bground" value="village"> Village 
+                     </label>
+                     <label class="radio">
+                        <input type="radio" name="bground" value="office"> Office 
+                     </label>
+                     <label class="radio">
+                        <input type="radio" name="bground" value="sunset"> Sunset 
+                     </label>
+                </div>
+            </div>
+        </section>
+        <section>
+            <div class="container">
+                <div class="column">
+                    <video id="avideo" autoplay>Start Stream</video>
+                    <canvas id="acanvas"></canvas>
+                </div>
+            </div>
+        </section>
+        <img hidden id='none_img' src='../shared/images/none.jpg' />
+        <img hidden id='forest_img' src='../shared/images/forest.jpg' />
+        <img hidden id='mountain_img' src='../shared/images/mountain.jpg' />
+        <img hidden id='office_img' src='../shared/images/office.jpg' />
+        <img hidden id='sunset_img' src='../shared/images/sunset.jpg' />
+        <img hidden id='village_img' src='../shared/images/village.jpg' />
+    </body>
+</html>

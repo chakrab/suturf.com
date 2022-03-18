@@ -35,6 +35,11 @@ public class RotatedArray {
 		return findRotationKey(arr, mid+1, high);
 	}
 	
+	public int[] rearrangeArray(final int [] arr, final int rotationKey) {
+		
+		
+	}
+	
 	public static void main (final String [] args) {
 		final RotatedArray ra = new RotatedArray();
 		
