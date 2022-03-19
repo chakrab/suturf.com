@@ -1,0 +1,106 @@
+<html>
+    <head>
+        <title>Covid 19 Info Search</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="../shared/ext/css/bulma.min.css" />
+
+        <script src="../shared/ext/js/jquery-3.6.0.min.js" type="text/javascript"></script>
+        <script src="../shared/ext/js/tf.min.js" type="text/javascript"></script>
+        <script src="../shared/ext/js/tfjs-converter.js" type="text/javascript"></script>
+        <script src="../shared/ext/js/qna.js" type="text/javascript"></script>
+        <script type="text/javascript">
+            var wikiLoaded = false;
+            var model = null;
+            var wikiText = null;
+
+            $(document).ready(function () {
+
+                const askIt  = $('#askit')[0];
+                const tmsgs  = $('#messages');
+                const tansr  = $('#answer');
+                const tqust  = $('#question');
+
+                addMessage = function(msg) {
+                    var txt = tmsgs.val();
+                    tmsgs.val(msg + '\n' + txt);
+                }
+
+                addAnswer = function(msg, clear) {
+                    if (clear) {
+                        tansr.val(msg);
+                    } else {
+                        var txt = tansr.val();
+                        tansr.val(txt + '\n' + msg);
+                    }
+                }
+
+                wikiLoadSuccess = function(data) {
+                    addMessage('wiki loaded successfully....');
+                    wikiLoaded = true;
+                    wikiText = data.query.pages[0].revisions[0].slots.main.content;
+                    console.log(wikiText);
+                }
+
+                wikiLoadFail = function(xhr, err) {
+                    addMessage('wiki load failed...');
+                }
+
+                qnaLoadSuccess = function(value) {
+                    addMessage('qna loaded successfully....');
+                    model = value;
+                    
+                    // Load Wiki into the model
+                    addMessage('Started WIKIpedia page load...');
+                    $.ajax({
+                        url: "https://en.wikipedia.org/w/api.php?origin=*&format=json&action=query&prop=revisions&titles=COVID-19&rvslots=*&rvprop=content&formatversion=2",
+                        success: wikiLoadSuccess,
+                        error: wikiLoadFail
+                    });
+                }
+
+                qnaLoadFail = function(err) {
+                    addMessage('qna load failed...');
+                }
+
+                // Start QNA load
+                addMessage('Started qna load...');
+                qna.load()
+                    .then(qnaLoadSuccess)
+                    .catch(qnaLoadFail);
+
+                getAnswer = function(data) {
+                    console.log(data);
+                }
+
+                getAnswerError = function(err) {
+                    console.log(err);
+                }
+
+                askIt.addEventListener('click', function(e) {
+                    var qst = tqust.val();
+                    addAnswer('Q: ' + qst + '?', true);
+                    model.findAnswers(qst, wikiText).then(getAnswer).catch();
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <section class="section">
+            <div class="container">
+                <textarea id="messages" class="textarea" placeholder="Messages..." readonly></textarea>
+            </div>
+            <br/>
+            <div class="container">
+                <label for="question">Ask a Question:</label>
+                <input type="input" name="question" id="question">
+                <button class="button is-small" id="askit">Ask</button>
+            </div>
+            <br/>
+            <div class="container">
+                <textarea id="answer" class="textarea" placeholder="Answer..." readonly></textarea>
+            </div>
+        </section>
+    </body>
+</html>
