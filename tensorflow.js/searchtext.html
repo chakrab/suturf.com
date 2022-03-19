@@ -39,7 +39,7 @@
                 wikiLoadSuccess = function(data) {
                     addMessage('wiki loaded successfully....');
                     wikiLoaded = true;
-                    wikiText = data.query.pages[0].revisions[0].slots.main.content;
+                    wikiText = data.query.pages[0].revisions[0].slots.main.content.replace( /\s|\[|\]|\{|\}/g, ' ');
                     console.log(wikiText);
                 }
 
@@ -72,6 +72,11 @@
 
                 getAnswer = function(data) {
                     console.log(data);
+                    if (data.length > 0) {
+                        addAnswer('A: ' + data[0].text + '\n', false);
+                    } else {
+                        addAnswer('A: ' + 'NOT FOUND' + '\n', false);
+                    }
                 }
 
                 getAnswerError = function(err) {
