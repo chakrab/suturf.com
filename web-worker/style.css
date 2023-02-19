@@ -1,0 +1,52 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    height: 100vh;
+    width: 100vw;
+    background-image: linear-gradient(to bottom, #dadaec, #827aec);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+}
+
+.board {
+    height: 85vh;
+    width: 90vw;
+    background-image: linear-gradient(to bottom, #363532, #13100e);
+    border-radius: 14px;
+}
+
+.ball {
+    height: 60px;
+    width: 60px;
+    border-radius: 50%;
+    position: fixed;
+    top: calc(50% - 30px);
+    left: calc(50% - 30px);
+    background-image: linear-gradient(to right, #cfd3da, #8e9493);
+}
+
+.message {
+    position: fixed;
+    height: 10vh;
+    width: 32vw;
+    left: calc(50% - 16vw);
+    color: #f5ffc9;
+    font: 1.2em "Fira Sans", sans-serif;
+    margin: 75vh auto auto auto;
+}
+
+.kmessage {
+    position: fixed;
+    height: 15vh;
+    width: 2vw;
+    left: calc(50% - 1vw);
+    color: #f5ffc9;
+    font: 2em "Fira Sans", sans-serif;
+    margin: 65vh auto auto auto;
+}
